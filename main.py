@@ -17,11 +17,15 @@ from pygame.locals import DOUBLEBUF, KEYDOWN, K_ESCAPE, K_q, K_SPACE, K_r, K_s
 
 class Display2D(object):
     def __init__(self, set_size_window=(1400, 900)):
+        self.record = False
+        self.space = False
+        self.h, self.w, self.z = 0, 0, 0
+        self.video = None
+        self.out = []
         x = 100
         y = 100
         os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (x, y)
         pygame.init()
-        # pygame.display.set_caption(" MOIL Visual SLAM      'Space to Play',  'Esc to Close'")
         pygame.display.set_caption(" MOIL ")
 
         self.record = False
@@ -30,6 +34,11 @@ class Display2D(object):
 
     @classmethod
     def cvimage_to_pygame(cls, cv2Image, ratio):
+        """
+        :param cv2Image:
+        :param ratio:
+        :return:
+        """
         h, w = cv2Image.shape[:2]
         cv2Image = cv2.resize(cv2Image, (round(w * ratio), round(h * ratio)), interpolation=cv2.INTER_AREA)
         if cv2Image.dtype.name == 'uint16':
@@ -46,11 +55,10 @@ class Display2D(object):
 
     def showImage(self, image_1=None, image_2=None, image_3=None, image_4=None, ratio=0.5):
         """
-
-        :param image_3:
-        :type image_3:
-        :param image_1:
-        :param image_2:
+        :param image_1: camera source 1
+        :param image_2: camera source 2
+        :param image_3: camera source 3
+        :param image_4: camera source 4
         :param ratio:
         :return:
         """
@@ -60,22 +68,20 @@ class Display2D(object):
 
             elif event.type == KEYDOWN:
                 if event.key == K_ESCAPE or event.key == K_q:
-                    # self.video.stop()
                     sys.exit(0)
-                # if event.key == K_SPACE:
-                #     if self.video.is_paused is True:
-                #         self.video.resume()
-                #     elif self.video.is_paused is False:
-                #         self.video.pause()
-                #
+
+                if event.key == K_SPACE:
+                    print("save image")
+                    self.space = True
+
                 if event.key == K_r:
+                    print("start record")
                     self.record = True
-                    # if record is not None:
-                    #     record.write(image_1)
-                #     self.video.restart()
-                #
+                    print(self.record)
+
                 if event.key == K_s:
-                    print("test")
+                    print("stop record")
+                    self.record = False
 
         if image_2 is not None:
             img2 = self.cvimage_to_pygame(image_2, ratio)
@@ -89,43 +95,60 @@ class Display2D(object):
             img2 = self.cvimage_to_pygame(image_4, ratio)
             self.screen.blit(img2, (600, 450))
 
-        # if image_1 is not None:
         img1 = self.cvimage_to_pygame(image_1, ratio)
         self.screen.blit(img1, (5, 5))
         pygame.display.flip()
 
+    def main(self):
+        """
+        Start program
+        """
 
-view = Display2D()
-cap = cv2.VideoCapture("http://10.42.0.212:8000/stream.mjpg")
-cap_2 = cv2.VideoCapture("http://10.42.0.170:8000/stream.mjpg")
-cap_3 = cv2.VideoCapture("http://10.42.0.183:8000/stream.mjpg")
-cap_4 = cv2.VideoCapture("http://10.42.0.251:8000/stream.mjpg")
-ret, image = cap.read()
-h, w, z = image.shape
+        # read video
+        cap_1 = cv2.VideoCapture("http://10.42.0.212:8000/stream.mjpg")
+        cap_2 = cv2.VideoCapture("http://10.42.0.170:8000/stream.mjpg")
+        cap_3 = cv2.VideoCapture("http://10.42.0.183:8000/stream.mjpg")
+        cap_4 = cv2.VideoCapture("http://10.42.0.251:8000/stream.mjpg")
 
-record = True
-out = []
-fourcc = cv2.VideoWriter_fourcc(*'XVID')
-out.append(cv2.VideoWriter("output_image_1_4.avi", fourcc, 10, (w, h)))
-out.append(cv2.VideoWriter('output_image_2_4.avi', fourcc, 10, (w, h)))
-out.append(cv2.VideoWriter('output_image_3_4.avi', fourcc, 10, (w, h)))
-out.append(cv2.VideoWriter('output_image_4_4.avi', fourcc, 10, (w, h)))
+        _, image = cap_1.read()
+        self.h, self.w, self.z = image.shape
+        self.record_setup()
 
-while cap.isOpened():
-    success, frame = cap.read()
-    _, frame2 = cap_2.read()
-    _, frame3 = cap_3.read()
-    _, frame4 = cap_4.read()
-    if success:
-        cv2.imwrite("images/right_true_park5.jpg", frame)
-        cv2.imwrite("images/left_true_park5.jpg", frame2)
-        cv2.imwrite("images/front_true_park5.jpg", frame3)
-        cv2.imwrite("images/back_true_park5.jpg", frame4)
+        while cap_1.isOpened():
+            success, frame1 = cap_1.read()
+            _, frame2 = cap_2.read()
+            _, frame3 = cap_3.read()
+            _, frame4 = cap_4.read()
 
-        if record:
-            out[0].write(frame)
-            out[1].write(frame2)
-            out[2].write(frame3)
-            out[3].write(frame4)
+            if success:
+                if self.space:
+                    cv2.imwrite("images/image1.jpg", frame1)
+                    cv2.imwrite("images/image2.jpg", frame2)
+                    cv2.imwrite("images/image3.jpg", frame3)
+                    cv2.imwrite("images/image4.jpg", frame4)
+                    self.space = False
 
-        view.showImage(image_1=frame, image_2=frame2, image_3=frame3, image_4=frame4, ratio=0.25)
+                if self.record:
+                    self.out[0].write(frame1)
+                    self.out[1].write(frame2)
+                    self.out[2].write(frame3)
+                    self.out[3].write(frame4)
+
+                # self.showImage(image_1=frame1, ratio=0.25)
+                self.showImage(image_1=frame1, image_2=frame2, image_3=frame3, image_4=frame4, ratio=0.25)
+
+    def record_setup(self):
+        """
+        setup record video
+        """
+        print("setup")
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        self.out.append(cv2.VideoWriter("Videos/video_1.avi", fourcc, 10, (self.w, self.h)))
+        self.out.append(cv2.VideoWriter('Videos/video_2.avi', fourcc, 10, (self.w, self.h)))
+        self.out.append(cv2.VideoWriter('Videos/video_3.avi', fourcc, 10, (self.w, self.h)))
+        self.out.append(cv2.VideoWriter('Videos/video_4.avi', fourcc, 10, (self.w, self.h)))
+
+
+if __name__ == "__main__":
+    app = Display2D()
+    app.main()
