@@ -35,9 +35,15 @@ class Display2D(object):
     @classmethod
     def cvimage_to_pygame(cls, cv2Image, ratio):
         """
-        :param cv2Image:
-        :param ratio:
-        :return:
+        This function is to convert the opencv image to pygame image.
+
+        Args:
+            cv2Image (): image source from opencv object
+            ratio (): the ratio of size image
+
+        Returns:
+            image showing on the PyGame
+
         """
         h, w = cv2Image.shape[:2]
         cv2Image = cv2.resize(cv2Image, (round(w * ratio), round(h * ratio)), interpolation=cv2.INTER_AREA)
@@ -55,12 +61,17 @@ class Display2D(object):
 
     def showImage(self, image_1=None, image_2=None, image_3=None, image_4=None, ratio=0.5):
         """
-        :param image_1: camera source 1
-        :param image_2: camera source 2
-        :param image_3: camera source 3
-        :param image_4: camera source 4
-        :param ratio:
-        :return:
+        Showing image function for multiple camera
+
+        Args:
+            image_1 (): camera source 1
+            image_2 (): camera source 2
+            image_3 (): camera source 3
+            image_4 (): camera source 4
+            ratio (): The ratio image
+
+        Returns:
+
         """
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -101,10 +112,13 @@ class Display2D(object):
 
     def main(self):
         """
-        Start program
-        """
+        Here is the main function that will run the program.
 
-        # read video
+        Returns:
+
+        """
+        # please modify the camera input as you use, here the example
+        # is when you use the streaming camera.
         cap_1 = cv2.VideoCapture("http://10.42.0.212:8000/stream.mjpg")
         cap_2 = cv2.VideoCapture("http://10.42.0.170:8000/stream.mjpg")
         cap_3 = cv2.VideoCapture("http://10.42.0.183:8000/stream.mjpg")
@@ -116,9 +130,9 @@ class Display2D(object):
 
         while cap_1.isOpened():
             success, frame1 = cap_1.read()
-            _, frame2 = cap_2.read()
-            _, frame3 = cap_3.read()
-            _, frame4 = cap_4.read()
+            success, frame2 = cap_2.read()
+            success, frame3 = cap_3.read()
+            success, frame4 = cap_4.read()
 
             if success:
                 if self.space:
@@ -139,9 +153,12 @@ class Display2D(object):
 
     def record_setup(self):
         """
-        setup record video
+        Set up the camera recording object, please check how much camera you use.
+        the comment the un necessary code bellow.
+
+        Returns:
+
         """
-        print("setup")
         fourcc = cv2.VideoWriter_fourcc(*'XVID')
         self.out.append(cv2.VideoWriter("Videos/video_1.avi", fourcc, 10, (self.w, self.h)))
         self.out.append(cv2.VideoWriter('Videos/video_2.avi', fourcc, 10, (self.w, self.h)))

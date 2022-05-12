@@ -44,4 +44,4 @@
 
 Note:
    1. You can change location of image save by yourself
-   2. After save please **move** or **change* the name of the file so overwrite no happens
+   2. After save please **move** or **change** the name of the file so overwrite no happens
