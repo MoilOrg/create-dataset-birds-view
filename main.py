@@ -1,9 +1,8 @@
 """
-This class is to showing image on the pygame user interface.
-The reason why we use pygame is about the speed of the computation.
+This class is to showing multiple streaming video using opencv and multithreading.
 
-Writer: Haryanto
-Last updated : 08/02/2022
+Writer: aji-ptn
+Last updated : 04/07/2022
 Under copyright: MOIL-Org
 """
 import os
@@ -11,161 +10,77 @@ import sys
 
 import cv2
 import numpy as np
-import pygame
-from pygame.locals import DOUBLEBUF, KEYDOWN, K_ESCAPE, K_q, K_SPACE, K_r, K_s
+from threading import Thread
 
 
-class Display2D(object):
-    def __init__(self, set_size_window=(1400, 900)):
-        self.record = False
-        self.space = False
-        self.h, self.w, self.z = 0, 0, 0
-        self.video = None
-        self.out = []
-        x = 100
-        y = 100
-        os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (x, y)
-        pygame.init()
-        pygame.display.set_caption(" MOIL ")
+class VStream:
+    def __init__(self, src):
+        self.capture = cv2.VideoCapture(src)
+        self.thread = Thread(target=self.update, args=())
+        self.thread.daemon = True
+        self.thread.start()
 
-        self.record = False
-        self.screen = pygame.display.set_mode(set_size_window, DOUBLEBUF)
-        self.surface = pygame.Surface(self.screen.get_size()).convert()
+    def update(self):
+        while True:
+            _, self.frame = self.capture.read()
 
-    @classmethod
-    def cvimage_to_pygame(cls, cv2Image, ratio):
-        """
-        This function is to convert the opencv image to pygame image.
+    def get_frame(self):
+        return self.frame
 
-        Args:
-            cv2Image (): image source from opencv object
-            ratio (): the ratio of size image
 
-        Returns:
-            image showing on the PyGame
+class main_program():
+    def __init__(self):
+        self.fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        self.record = True
+        self.set_record()
+        self.cam1 = VStream("http://192.168.103.211:8000/stream.mjpg")
+        self.cam2 = VStream("http://192.168.103.18:8000/stream.mjpg")
+        self.cam3 = VStream("http://192.168.103.211:8000/stream.mjpg")
+        self.cam4 = VStream("http://192.168.103.211:8000/stream.mjpg")
 
-        """
-        h, w = cv2Image.shape[:2]
-        cv2Image = cv2.resize(cv2Image, (round(w * ratio), round(h * ratio)), interpolation=cv2.INTER_AREA)
-        if cv2Image.dtype.name == 'uint16':
-            cv2Image = (cv2Image / 256).astype('uint8')
-        size = cv2Image.shape[1::-1]
-        if len(cv2Image.shape) == 2:
-            cv2Image = np.repeat(cv2Image.reshape(size[1], size[0], 1), 3, axis=2)
-            format = 'RGB'
-        else:
-            format = 'RGBA' if cv2Image.shape[2] == 4 else 'RGB'
-            cv2Image[:, :, [0, 2]] = cv2Image[:, :, [2, 0]]
-        surface = pygame.image.frombuffer(cv2Image.flatten(), size, format)
-        return surface.convert_alpha() if format == 'RGBA' else surface.convert()
-
-    def showImage(self, image_1=None, image_2=None, image_3=None, image_4=None, ratio=0.5):
-        """
-        Showing image function for multiple camera
-
-        Args:
-            image_1 (): camera source 1
-            image_2 (): camera source 2
-            image_3 (): camera source 3
-            image_4 (): camera source 4
-            ratio (): The ratio image
-
-        Returns:
-
-        """
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                sys.exit(0)
-
-            elif event.type == KEYDOWN:
-                if event.key == K_ESCAPE or event.key == K_q:
-                    sys.exit(0)
-
-                if event.key == K_SPACE:
-                    print("save image")
-                    self.space = True
-
-                if event.key == K_r:
-                    print("start record")
-                    self.record = True
-                    print(self.record)
-
-                if event.key == K_s:
-                    print("stop record")
-                    self.record = False
-
-        if image_2 is not None:
-            img2 = self.cvimage_to_pygame(image_2, ratio)
-            self.screen.blit(img2, (600, 5))
-
-        if image_3 is not None:
-            img2 = self.cvimage_to_pygame(image_3, ratio)
-            self.screen.blit(img2, (5, 450))
-
-        if image_4 is not None:
-            img2 = self.cvimage_to_pygame(image_4, ratio)
-            self.screen.blit(img2, (600, 450))
-
-        img1 = self.cvimage_to_pygame(image_1, ratio)
-        self.screen.blit(img1, (5, 5))
-        pygame.display.flip()
-
-    def main(self):
-        """
-        Here is the main function that will run the program.
-
-        Returns:
-
-        """
-        # please modify the camera input as you use, here the example
-        # is when you use the streaming camera.
-        cap_1 = cv2.VideoCapture("http://10.42.0.212:8000/stream.mjpg")
-        cap_2 = cv2.VideoCapture("http://10.42.0.170:8000/stream.mjpg")
-        cap_3 = cv2.VideoCapture("http://10.42.0.183:8000/stream.mjpg")
-        cap_4 = cv2.VideoCapture("http://10.42.0.251:8000/stream.mjpg")
-
-        _, image = cap_1.read()
-        self.h, self.w, self.z = image.shape
-        self.record_setup()
-
-        while cap_1.isOpened():
-            success, frame1 = cap_1.read()
-            success, frame2 = cap_2.read()
-            success, frame3 = cap_3.read()
-            success, frame4 = cap_4.read()
-
-            if success:
-                if self.space:
-                    cv2.imwrite("images/image1.jpg", frame1)
-                    cv2.imwrite("images/image2.jpg", frame2)
-                    cv2.imwrite("images/image3.jpg", frame3)
-                    cv2.imwrite("images/image4.jpg", frame4)
-                    self.space = False
-
+        while True:
+            try:
+                myFrame1 = self.cam1.get_frame()
+                myFrame2 = self.cam2.get_frame()
+                myFrame3 = self.cam3.get_frame()
+                myFrame4 = self.cam4.get_frame()
+                myFrameH1 = np.hstack((myFrame1, myFrame2))
+                myFrameH2 = np.hstack((myFrame3, myFrame4))
+                myFrame = np.vstack((myFrameH1, myFrameH2))
+                myFrame = cv2.resize(myFrame, (640, 480), cv2.INTER_AREA)
                 if self.record:
-                    self.out[0].write(frame1)
-                    self.out[1].write(frame2)
-                    self.out[2].write(frame3)
-                    self.out[3].write(frame4)
+                    print("record")
+                    self.out1.write(myFrame1)
+                    self.out2.write(myFrame2)
+                    self.out3.write(myFrame3)
+                    self.out4.write(myFrame4)
+                cv2.imshow("video", myFrame)
+            except:
 
-                # self.showImage(image_1=frame1, ratio=0.25)
-                self.showImage(image_1=frame1, image_2=frame2, image_3=frame3, image_4=frame4, ratio=0.25)
+                print("not from available")
+            if cv2.waitKey(1) == ord('q'):
+                self.cam1.capture.release()
+                self.cam2.capture.release()
+                self.cam3.capture.release()
+                self.cam4.capture.release()
+                cv2.destroyAllWindows()
+                exit(1)
+                break
+            elif cv2.waitKey(90) == ord("a"):
+                cv2.imwrite("images/image1.jpg", self.cam1.get_frame())
+                cv2.imwrite("images/image2.jpg", self.cam2.get_frame())
+                cv2.imwrite("images/image3.jpg", self.cam3.get_frame())
+                cv2.imwrite("images/image4.jpg", self.cam4.get_frame())
+                print("save")
 
-    def record_setup(self):
-        """
-        Set up the camera recording object, please check how much camera you use.
-        the comment the un necessary code bellow.
-
-        Returns:
-
-        """
-        fourcc = cv2.VideoWriter_fourcc(*'XVID')
-        self.out.append(cv2.VideoWriter("Videos/video_1.avi", fourcc, 10, (self.w, self.h)))
-        self.out.append(cv2.VideoWriter('Videos/video_2.avi', fourcc, 10, (self.w, self.h)))
-        self.out.append(cv2.VideoWriter('Videos/video_3.avi', fourcc, 10, (self.w, self.h)))
-        self.out.append(cv2.VideoWriter('Videos/video_4.avi', fourcc, 10, (self.w, self.h)))
+    def set_record(self):
+        h = 1944
+        w = 2592
+        self.out1 = cv2.VideoWriter("Videos/video_1.avi", self.fourcc, 10, (w, h))
+        self.out2 = cv2.VideoWriter('Videos/video_2.avi', self.fourcc, 10, (w, h))
+        self.out3 = cv2.VideoWriter('Videos/video_3.avi', self.fourcc, 10, (w, h))
+        self.out4 = cv2.VideoWriter('Videos/video_4.avi', self.fourcc, 10, (w, h))
 
 
 if __name__ == "__main__":
-    app = Display2D()
-    app.main()
+    main_program()

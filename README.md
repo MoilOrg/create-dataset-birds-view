@@ -1,8 +1,7 @@
 ## Readme
->This is repository for collect data birds view using multiple camera.
+>This is repository for collect data birds view using multiple camera using multithreading.
 
 ## How to use?
-
 1. Set up virtual environment
    1. Open using Pycharm
       > If Pycharm show just like this picture please press OK. This is created Virtual Env and install all requirements
@@ -17,30 +16,31 @@
       pip install -r requirements.txt
       ```
 2. Change the source of image
-   ![img.png](assets/img.png)
+![img_3.png](assets/img_3.png)
 
 3. Run Program!
    > Type this command in your Terminal
    ```python
    python3 main.py
    ```
+## Save images
+### Keyboard input
+1. a
+   - Save image to images/ directory
+   
+make sure you save it correctly, because with multithreading 4 image some difficult to interrupt
 
-## Keyboard input
-1. Space
-   - Save image to images directory
-2. R
-   - Start to record video
-3. S
-   - Stop record video
-
-## Save and Record Location
 > Image will same in **images** directory:
 
-   ![img_2.png](assets/img_2.png)
+   ![img.png](assets/img4.png)
+
+## Record video
+Change self.record become True to record
+![img_2.png](assets/img_6.png)
 
 > Video will save in **video** directory
 
-   ![img_1.png](assets/img_1.png)
+   ![img_1.png](assets/img_5.png)
 
 Note:
    1. You can change location of image save by yourself
